@@ -1,0 +1,297 @@
+{
+    "log": {
+        "level": "warn",
+        "timestamp": true
+    },
+    "inbounds": [
+        {
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2080
+        },
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "address": [
+                "172.19.0.1/30",
+                "fdfe:dcba:9876::1/126"
+            ],
+            "mtu": 9000,
+            "auto_route": true,
+            "strict_route": false,
+            "dns_mode": "hijack"
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "selector",
+            "tag": "MODE",
+            "outbounds": [
+                "PROXY",
+                "DIRECT"
+            ],
+            "default": "PROXY",
+            "interrupt_exist_connections": true
+        },
+        {
+            "type": "selector",
+            "tag": "PROXY",
+            "outbounds": [
+                "Hysteria2",
+                "REALITY"
+            ],
+            "default": "Hysteria2"
+        },
+        {
+            "type": "hysteria2",
+            "tag": "Hysteria2",
+            "server": "自己的服务器ip",
+            "server_port": 443,
+            "password": "服务端的配置",
+            "tls": {
+                "enabled": true,
+                "server_name": "服务端的配置",
+                "alpn": [
+                    "h3"
+                ],
+                "certificate": "-----BEGIN CERTIFICATE-----\nMIIB......\n-----END CERTIFICATE-----\n",
+                "insecure": false
+            }
+        },
+        {
+            "type": "vless",
+            "tag": "REALITY",
+            "server": "自己的服务器ip",
+            "server_port": 443,
+            "uuid": "服务端的配置",
+            "flow": "服务端的配置",
+            "tls": {
+                "enabled": true,
+                "server_name": "www.microsoft.com",  "####使用时删掉注释，这里的server_name需要与服务端的配置一致"
+                "insecure": false,
+                "utls": {
+                    "enabled": true,
+                    "fingerprint": "chrome"
+                },
+                "reality": {
+                    "enabled": true,
+                    "public_key": "服务端的配置",
+                    "short_id": "服务端的配置"
+                }
+            }
+        },
+        {
+            "type": "direct",
+            "tag": "DIRECT",
+            "domain_resolver": "cloudflare"
+        },
+        {
+            "type": "direct",
+            "tag": "DIRECT_CN",
+            "domain_resolver": "dns-cn"
+        }
+    ],
+    "dns": {
+        "servers": [
+            {
+                "type": "https",
+                "tag": "dns-cn",
+                "server": "223.5.5.5",
+                "headers": {
+                    "Host": "dns.alidns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "dns.alidns.com"
+                }
+            },
+            {
+                "type": "https",
+                "tag": "cloudflare-proxy",
+                "server": "1.1.1.1",
+                "headers": {
+                    "Host": "cloudflare-dns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "cloudflare-dns.com"
+                },
+                "detour": "PROXY"
+            },
+            {
+                "type": "https",
+                "tag": "cloudflare",
+                "server": "1.1.1.1",
+                "headers": {
+                    "Host": "cloudflare-dns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "cloudflare-dns.com"
+                },
+                "detour": "MODE"
+            }
+        ],
+        "rules": [
+            {
+                "domain_suffix": [
+                    "discord.com",
+                    "discord.gg",
+                    "discordapp.com",
+                    "discordapp.net",
+                    "discord.media",
+                    "discordcdn.com",
+                    "discord"
+                ],
+                "action": "route",
+                "server": "cloudflare-proxy"
+            },
+            {
+                "rule_set": "geosite-category-ads-all",
+                "action": "reject"
+            },
+            {
+                "domain_suffix": [
+                    "douyin.com",
+                    "douyincdn.com",
+                    "amemv.com",
+                    "douyinvod.com",
+                    "douyin",
+                    "cn"
+                ],
+                "action": "route",
+                "server": "dns-cn"
+            },
+            {
+                "rule_set": "geosite-cn",
+                "action": "route",
+                "server": "dns-cn"
+            },
+            {
+                "rule_set": "geosite-geolocation-!cn",
+                "server": "cloudflare"
+            }
+        ],
+        "final": "cloudflare",
+        "strategy": "ipv4_only",
+        "reverse_mapping": true
+    },
+    "route": {
+        "default_domain_resolver": "cloudflare",
+        "rules": [
+            {
+                "port": 53,
+                "action": "hijack-dns"
+            },
+            {
+                "ip_is_private": true,
+                "action": "route",
+                "outbound": "DIRECT"
+            },
+            {
+                "action": "sniff"
+            },
+            {
+                "process_name": [
+                    "Discord.exe"
+                ],
+                "action": "route",
+                "outbound": "PROXY"
+            },
+            {
+                "domain_suffix": [
+                    "discord.com",
+                    "discord.gg",
+                    "discordapp.com",
+                    "discordapp.net",
+                    "discord.media",
+                    "discordcdn.com"
+                ],
+                "action": "route",
+                "outbound": "PROXY"
+            },
+            {
+                "domain_suffix": [
+                    "douyin.com",
+                    "douyincdn.com",
+                    "amemv.com",
+                    "douyinvod.com",
+                    "cn"
+                ],
+                "action": "route",
+                "outbound": "DIRECT_CN"
+            },
+            {
+                "rule_set":"geosite-category-ads-all",
+                "action": "reject"
+            },
+            {
+                "rule_set": "geosite-geolocation-!cn",
+                "action": "route",
+                "outbound": "PROXY"
+            },
+            {
+                "rule_set": "geosite-cn",
+                "action": "route",
+                "outbound": "DIRECT_CN"
+            },
+            {
+                "rule_set": "geoip-cn",
+                "action": "route",
+                "outbound": "DIRECT_CN"
+            }
+        ],
+        "rule_set": [
+            {
+                "type": "remote",
+                "tag": "geosite-cn",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geoip-cn",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-category-ads-all",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "tag": "geosite-geolocation-!cn",
+                "type": "remote",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            }
+        ],
+        "final":"MODE",
+        "auto_detect_interface": true
+    },
+    "experimental": {
+        "cache_file": {
+            "enabled": true
+        }
+    }
+}
