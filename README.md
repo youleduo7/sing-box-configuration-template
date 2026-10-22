@@ -72,6 +72,29 @@ sing-box-configuration-template/
 > [!IMPORTANT]
 > 当前仓库中的三个 JSON 模板在 REALITY 的 `server_name` 附近保留了以 `####使用时删掉注释` 开头的说明文字，它**不是合法的 JSON 注释**。使用前请移除这段说明，保留正确的 JSON 逗号与字段结构，并完成所有占位参数的替换。模板不应直接原样导入。
 
+#### Hysteria2 带宽参数与 Brutal 拥塞控制
+
+新版模板在服务端和客户端的 Hysteria2 配置中加入了 `up_mbps`、`down_mbps`，服务端还设置了 `ignore_client_bandwidth`。这几个参数会影响 Brutal 与 BBR 的使用方式，**不能只修改服务端而忽略客户端配置**。
+
+| 服务端 `ignore_client_bandwidth` | 服务端带宽参数 | 客户端带宽参数 | 预期行为 |
+| --- | --- | --- | --- |
+| `false` | 已填写 | 已填写 | 客户端可以使用 Brutal；实际速率受双方的带宽设置及网络条件影响 |
+| `false` | 已填写 | 未填写 | 客户端通常改用 BBR，无法获得预期的 Brutal 效果 |
+| `true` | 未填写 | 任意 | 服务端要求客户端使用 BBR，而不是 Brutal |
+| `true` | 已填写 | 任意 | 服务端禁止客户端使用 BBR，**不能简单理解为回退 BBR** |
+
+**使用当前仓库模板时，建议：**
+
+1. 保持服务端 `"ignore_client_bandwidth": false`，并按实际需求填写服务端的 `up_mbps`、`down_mbps`。
+2. 客户端也填写 `up_mbps` 和 `down_mbps`，才能按预期启用 Brutal；不填写时通常会使用 BBR。
+3. 带宽单位是 **Mbps（兆比特/秒）**。客户端和服务端的数值不要求完全相同，应根据各自实际可用带宽合理设置；服务端上传对应客户端的下载方向，反之亦然。
+4. 不要填入超过实际链路能力的带宽值，否则可能出现丢包、速度不稳定或效果不佳。若连接失败，应同时检查 JSON 语法、认证、证书、网络与运行日志，不能仅凭带宽参数判断原因。
+
+> [!NOTE]
+> 模板中的 `此处填入服务器带宽` 是占位文字，不是有效的 JSON 数值。使用时请将其替换为合适的数字，例如 `100`，且不要为数字添加引号。
+
+参考：[sing-box Hysteria2 入站参数](https://sing-box.sagernet.org/zh/configuration/inbound/hysteria2/) · [出站参数](https://sing-box.sagernet.org/zh/configuration/outbound/hysteria2/)
+
 ### 4. 检查并运行
 
 启动前先使用对应版本的 sing-box 检查配置语法及字段兼容性。服务端文档中的检查命令为：
