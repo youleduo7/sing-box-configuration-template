@@ -49,6 +49,8 @@
             "server": "自己的服务器ip",
             "server_port": 443,
             "password": "服务端的配置",
+            "up_mbps": 此处填入服务器带宽,
+            "down_mbps": 此处填入服务器带宽,
             "tls": {
                 "enabled": true,
                 "server_name": "服务端的配置",
