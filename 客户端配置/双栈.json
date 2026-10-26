@@ -1,0 +1,418 @@
+{
+    "log": {
+        "level": "warn",
+        "timestamp": true
+    },
+    "inbounds": [
+        {
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2080
+        },
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "address": [
+                "172.19.0.1/30",
+                "fdfe:dcba:9876::1/126"
+            ],
+            "mtu": 9000,
+            "auto_route": true,
+            "strict_route": false,
+            "dns_mode": "hijack"
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "selector",
+            "tag": "PROXY",
+            "outbounds": [
+                "Hysteria2",
+                "REALITY"
+            ],
+            "default": "Hysteria2"
+        },
+        {
+            "type": "hysteria2",
+            "tag": "Hysteria2",
+            "server": "vps-dualstack",
+            "domain_resolver": {
+                "server": "vps-addresses",
+                "strategy": "prefer_ipv4"
+            },
+            "server_port": "<请填写 Hysteria2 服务端口，填入整数并去掉引号>",
+            "up_mbps": 500,
+            "down_mbps": 500,
+            "password": "<请填写 Hysteria2 连接密码>",
+            "tls": {
+                "enabled": true,
+                "server_name": "vps-dualstack",
+                "alpn": [
+                    "h3"
+                ],
+                "certificate": "<请填写 Hysteria2 CA 证书（PEM 格式，换行使用 \\n）>",
+                "insecure": false
+            }
+        },
+        {
+            "type": "vless",
+            "tag": "REALITY",
+            "server": "vps-dualstack",
+            "domain_resolver": {
+                "server": "vps-addresses",
+                "strategy": "prefer_ipv4"
+            },
+            "server_port": "<请填写 Reality 服务端口，填入整数并去掉引号>",
+            "uuid": "<请填写 VLESS 用户 UUID>",
+            "flow": "xtls-rprx-vision",
+            "tls": {
+                "enabled": true,
+                "server_name": "www.microsoft.com",
+                "insecure": false,
+                "utls": {
+                    "enabled": true,
+                    "fingerprint": "chrome"
+                },
+                "reality": {
+                    "enabled": true,
+                    "public_key": "<请填写 Reality 服务端公钥>",
+                    "short_id": "<请填写 Reality short_id>"
+                }
+            }
+        },
+        {
+            "type": "direct",
+            "tag": "DIRECT",
+            "domain_resolver": "cloudflare"
+        },
+        {
+            "type": "direct",
+            "tag": "DIRECT_CN",
+            "domain_resolver": "dns-cn"
+        }
+    ],
+    "ntp": {
+    "enabled": true,
+    "server": "time.apple.com",
+    "server_port": 123,
+    "interval": "30m",
+    "detour": "DIRECT"
+    },
+    "dns": {
+        "servers": [
+            {
+                "type": "https",
+                "tag": "dns-cn",
+                "server": "223.5.5.5",
+                "headers": {
+                    "Host": "dns.alidns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "dns.alidns.com"
+                }
+            },
+            {
+                "type": "https",
+                "tag": "cloudflare-proxy",
+                "server": "1.1.1.1",
+                "headers": {
+                    "Host": "cloudflare-dns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "cloudflare-dns.com"
+                },
+                "detour": "PROXY"
+            },
+            {
+                "type": "https",
+                "tag": "cloudflare",
+                "server": "1.1.1.1",
+                "headers": {
+                    "Host": "cloudflare-dns.com"
+                },
+                "tls": {
+                    "enabled": true,
+                    "insecure": false,
+                    "server_name": "cloudflare-dns.com"
+                },
+                "detour": "PROXY"
+            },
+            {
+                "type": "hosts",
+                "tag": "vps-addresses",
+                "predefined": {
+                    "vps-dualstack": [
+                        "<请填写 VPS IPv4 地址>",
+                        "<请填写 VPS IPv6 地址>"
+                    ]
+                }
+            }
+        ],
+        "rules": [
+            {
+                "domain_suffix": [
+                    "discord.com",
+                    "discord.gg",
+                    "discordapp.com",
+                    "discordapp.net",
+                    "discord.media",
+                    "discordcdn.com",
+                    "bing.com",
+                    "copilot.microsoft.com",
+                    "copilot.cloud.microsoft",
+                    "githubcopilot.com",
+                    "tv.apple.com",
+                    "news.apple.com"
+                ],
+                "action": "route",
+                "server": "cloudflare-proxy"
+            },
+            {
+                "rule_set": "geosite-category-ads-all",
+                "action": "reject"
+            },
+            {
+                "domain_suffix": [
+                    "douyin.com",
+                    "douyincdn.com",
+                    "amemv.com",
+                    "douyinvod.com",
+                    "douyin",
+                    "cn"
+                ],
+                "action": "route",
+                "server": "dns-cn"
+            },
+            {
+                "rule_set": [
+                    "geosite-cn",
+                    "geosite-geolocation-cn"
+                ],
+                "action": "route",
+                "server": "dns-cn"
+            },
+            {
+                "rule_set": [
+                    "geosite-geolocation-!cn",
+                    "geosite-openai",
+                    "geosite-google",
+                    "geosite-telegram",
+                    "geosite-youtube",
+                    "geosite-github",
+                    "geosite-apple",
+                    "geosite-microsoft"
+                ],
+                "action": "route",
+                "server": "cloudflare"
+            }
+        ],
+        "final": "cloudflare",
+        "strategy": "ipv4_only",
+        "reverse_mapping": true
+    },
+    "route": {
+        "default_domain_resolver": "cloudflare",
+        "rules": [
+            {
+                "port": 53,
+                "action": "hijack-dns"
+            },
+            {
+                "ip_is_private": true,
+                "action": "route",
+                "outbound": "DIRECT"
+            },
+            {
+                "action": "sniff"
+            },
+            {
+                "domain_suffix": [
+                    "discord.com",
+                    "discord.gg",
+                    "discordapp.com",
+                    "discordapp.net",
+                    "discord.media",
+                    "discordcdn.com",
+                    "bing.com",
+                    "copilot.microsoft.com",
+                    "copilot.cloud.microsoft",
+                    "githubcopilot.com",
+                    "tv.apple.com",
+                    "news.apple.com"
+                ],
+                "action": "route",
+                "outbound": "PROXY"
+            },
+            {
+                "domain_suffix": [
+                    "douyin.com",
+                    "douyincdn.com",
+                    "amemv.com",
+                    "douyinvod.com",
+                    "cn"
+                ],
+                "action": "route",
+                "outbound": "DIRECT_CN"
+            },
+            {
+                "rule_set":"geosite-category-ads-all",
+                "action": "reject"
+            },
+            {
+                "rule_set": [
+                    "geosite-geolocation-!cn",
+                    "geosite-openai",
+                    "geosite-google",
+                    "geosite-telegram",
+                    "geosite-youtube",
+                    "geosite-github",
+                    "geosite-microsoft",
+                    "geosite-apple"
+                ],
+                "action": "route",
+                "outbound": "PROXY"
+            },
+            {
+                "rule_set": [
+                    "geosite-cn",
+                    "geoip-cn",
+                    "geosite-geolocation-cn"
+                ],
+                "action": "route",
+                "outbound": "DIRECT_CN"
+            }
+        ],
+        "rule_set": [
+            {
+                "type": "remote",
+                "tag": "geosite-cn",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geoip-cn",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-geolocation-cn",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-openai",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-google",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-google.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-youtube",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-youtube.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-telegram",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-telegram.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-github",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-github.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-category-ads-all",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-apple",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-apple.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-microsoft",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-microsoft.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-geolocation-!cn",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs",
+                "http_client": {
+                    "detour": "PROXY"
+                },
+                "update_interval": "1d"
+            }
+        ],
+        "final":"PROXY",
+        "auto_detect_interface": true
+    },
+    "experimental": {
+        "cache_file": {
+            "enabled": true
+        }
+    }
+}

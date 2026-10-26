@@ -19,7 +19,7 @@
             ],
             "mtu": 9000,
             "auto_route": true,
-            "strict_route": true,
+            "strict_route": false,
             "dns_mode": "hijack"
         }
     ],
@@ -46,31 +46,29 @@
         {
             "type": "hysteria2",
             "tag": "Hysteria2",
-            "server": "自己的服务器ip",
-            "server_port": 443,
-            "password": "服务端的配置",
-            "up_mbps": 此处填入服务器带宽,如果不清楚则整行删除,
-            "down_mbps": 此处填入服务器带宽,如果不清楚则整行删除,
+            "server": "<请填写 Hysteria2 服务器 IP 或域名>",
+            "server_port": "<请填写 Hysteria2 服务端口，填入整数并去掉引号>",
+            "password": "<请填写 Hysteria2 连接密码>",
             "tls": {
                 "enabled": true,
-                "server_name": "服务端的配置",
+                "server_name": "<请填写 Hysteria2 TLS 服务器名称（SNI）>",
                 "alpn": [
                     "h3"
                 ],
-                "certificate": "-----BEGIN CERTIFICATE-----\nMIIB......\n-----END CERTIFICATE-----\n",
+                "certificate": "<请填写 Hysteria2 CA 证书（PEM 格式，换行使用 \\n）>",
                 "insecure": false
             }
         },
         {
             "type": "vless",
             "tag": "REALITY",
-            "server": "自己的服务器ip",
-            "server_port": 443,
-            "uuid": "服务端的配置",
-            "flow": "服务端的配置",
+            "server": "<请填写 Reality 服务器 IP 或域名>",
+            "server_port": "<请填写 Reality 服务端口，填入整数并去掉引号>",
+            "uuid": "<请填写 VLESS 用户 UUID>",
+            "flow": "",
             "tls": {
                 "enabled": true,
-                "server_name": "www.microsoft.com",  "####使用时删掉注释，这里的server_name需要与服务端的配置一致"
+                "server_name": "www.microsoft.com",
                 "insecure": false,
                 "utls": {
                     "enabled": true,
@@ -78,8 +76,8 @@
                 },
                 "reality": {
                     "enabled": true,
-                    "public_key": "服务端的配置",
-                    "short_id": "服务端的配置"
+                    "public_key": "<请填写 Reality 服务端公钥>",
+                    "short_id": "<请填写 Reality short_id>"
                 }
             }
         },
